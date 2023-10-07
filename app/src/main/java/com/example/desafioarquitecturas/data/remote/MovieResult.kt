@@ -1,4 +1,4 @@
-package com.example.desafioarquitecturas
+package com.example.desafioarquitecturas.data.remote
 
 data class MovieResult(
     val page: Int,

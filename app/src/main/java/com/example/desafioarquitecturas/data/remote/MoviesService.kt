@@ -1,4 +1,4 @@
-package com.example.desafioarquitecturas
+package com.example.desafioarquitecturas.data.remote
 
 import retrofit2.http.GET
 

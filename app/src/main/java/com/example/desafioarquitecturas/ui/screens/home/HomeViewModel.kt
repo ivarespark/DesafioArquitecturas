@@ -1,19 +1,21 @@
-package com.example.desafioarquitecturas
+package com.example.desafioarquitecturas.ui.screens.home
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.room.Room
+import com.example.desafioarquitecturas.data.Movie
+import com.example.desafioarquitecturas.data.local.MoviesDao
+import com.example.desafioarquitecturas.data.local.toMovie
+import com.example.desafioarquitecturas.data.remote.MoviesService
+import com.example.desafioarquitecturas.data.remote.ServerMovie
+import com.example.desafioarquitecturas.data.remote.toLocalMovie
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
-class MainViewModel: ViewModel() {
+class HomeViewModel(private val dao: MoviesDao): ViewModel() {
     /*
     var state by mutableStateOf(UiState())
         private set
@@ -32,22 +34,31 @@ class MainViewModel: ViewModel() {
     init {
         // Lanzo proceso de corutinas para llamar a getMovies()
         viewModelScope.launch {
+            val isDbEmpty = dao.count() == 0
+            if (isDbEmpty){
+                _state.value = UiState(loading = true)
+                dao.insertAll(
+                    Retrofit.Builder()
+                        .baseUrl("https://api.themoviedb.org/3/")
+                        .addConverterFactory(GsonConverterFactory.create())
+                        .build()
+                        .create(MoviesService::class.java)
+                        .getMovies()
+                        .results
+                        .map { it.toLocalMovie()}
+                )
+            }
+
             //state = UiState(Retrofit.Builder()
             // Con LiveData
-            _state.value = UiState(loading = true)
             _state.value = UiState(
                 loading = false,
-                movies = Retrofit.Builder()
-                .baseUrl("https://api.themoviedb.org/3/")
-                .addConverterFactory(GsonConverterFactory.create())
-                .build()
-                .create(MoviesService::class.java)
-                .getMovies()
-                .results)
+                movies = dao.getMovies().map { it.toMovie() }
+            )
         }
     }
 
-    fun onMovieClick(movie: ServerMovie){
+    fun onMovieClick(movie: Movie){
         val movies = _state.value.movies.toMutableList()
         // si el id coincide con la pelicula, entonces le cambia el favorito
         movies.replaceAll{ if (it.id == movie.id) movie.copy(favorite = !movie.favorite) else it}
@@ -56,6 +67,6 @@ class MainViewModel: ViewModel() {
 
     data class UiState(
         val loading : Boolean = false,
-        val movies: List<ServerMovie> = emptyList()
+        val movies: List<Movie> = emptyList()
     )
 }
