@@ -21,7 +21,7 @@ data class ServerMovie(
 )
 
 fun ServerMovie.toLocalMovie() = LocalMovie(
-    id = id,
+    id = 0,
     title = title,
     overview = overview,
     posterPath = poster_path,

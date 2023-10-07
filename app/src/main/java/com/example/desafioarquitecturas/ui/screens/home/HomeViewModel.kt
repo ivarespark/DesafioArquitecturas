@@ -2,15 +2,15 @@ package com.example.desafioarquitecturas.ui.screens.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.room.Room
 import com.example.desafioarquitecturas.data.Movie
 import com.example.desafioarquitecturas.data.local.MoviesDao
+import com.example.desafioarquitecturas.data.local.toLocalMovie
 import com.example.desafioarquitecturas.data.local.toMovie
 import com.example.desafioarquitecturas.data.remote.MoviesService
-import com.example.desafioarquitecturas.data.remote.ServerMovie
 import com.example.desafioarquitecturas.data.remote.toLocalMovie
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -49,20 +49,20 @@ class HomeViewModel(private val dao: MoviesDao): ViewModel() {
                 )
             }
 
-            //state = UiState(Retrofit.Builder()
-            // Con LiveData
-            _state.value = UiState(
-                loading = false,
-                movies = dao.getMovies().map { it.toMovie() }
-            )
+            dao.getMovies().collect{ movies ->
+                _state.value = UiState(
+                    loading = false,
+                    movies = movies.map { it.toMovie() }
+                )
+            }
         }
     }
 
     fun onMovieClick(movie: Movie){
-        val movies = _state.value.movies.toMutableList()
-        // si el id coincide con la pelicula, entonces le cambia el favorito
-        movies.replaceAll{ if (it.id == movie.id) movie.copy(favorite = !movie.favorite) else it}
-        _state.value = _state.value.copy(movies = movies)
+        viewModelScope.launch{
+            // copy: has una copia de movie pero cambiale el valor de favorite
+            dao.updateMovie(movie.copy(favorite = !movie.favorite).toLocalMovie())
+        }
     }
 
     data class UiState(

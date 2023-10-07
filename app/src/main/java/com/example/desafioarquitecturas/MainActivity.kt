@@ -10,15 +10,19 @@ import com.example.desafioarquitecturas.ui.screens.home.Home
 
 class MainActivity : ComponentActivity() {
 
-    val db = Room.databaseBuilder(
-        applicationContext,
-        MoviesDatabase::class.java,
-        "movies.db"
-    ).build()
+    lateinit var db : MoviesDatabase
 
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        db = Room.databaseBuilder(
+            applicationContext,
+            MoviesDatabase::class.java,
+            "movies.db"
+        ).build()
+
+
         setContent {
             Home(db.moviesDao())
         }
