@@ -3,19 +3,12 @@ package com.example.desafioarquitecturas.ui.screens.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.desafioarquitecturas.data.Movie
-import com.example.desafioarquitecturas.data.local.MoviesDao
-import com.example.desafioarquitecturas.data.local.toLocalMovie
-import com.example.desafioarquitecturas.data.local.toMovie
-import com.example.desafioarquitecturas.data.remote.MoviesService
-import com.example.desafioarquitecturas.data.remote.toLocalMovie
+import com.example.desafioarquitecturas.data.MoviesRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 
-class HomeViewModel(private val dao: MoviesDao): ViewModel() {
+class HomeViewModel(private val repository: MoviesRepository): ViewModel() {
     /*
     var state by mutableStateOf(UiState())
         private set
@@ -32,28 +25,12 @@ class HomeViewModel(private val dao: MoviesDao): ViewModel() {
     val state : StateFlow<UiState> = _state
 
     init {
-        // Lanzo proceso de corutinas para llamar a getMovies()
         viewModelScope.launch {
-            val isDbEmpty = dao.count() == 0
-            if (isDbEmpty){
-                _state.value = UiState(loading = true)
-                dao.insertAll(
-                    Retrofit.Builder()
-                        .baseUrl("https://api.themoviedb.org/3/")
-                        .addConverterFactory(GsonConverterFactory.create())
-                        .build()
-                        .create(MoviesService::class.java)
-                        .getMovies()
-                        .results
-                        .map { it.toLocalMovie()}
-                )
-            }
+            _state.value = UiState(loading = true)
+            repository.requestMovies()
 
-            dao.getMovies().collect{ movies ->
-                _state.value = UiState(
-                    loading = false,
-                    movies = movies.map { it.toMovie() }
-                )
+            repository.movies.collect{
+                _state.value = UiState(movies = it)
             }
         }
     }
@@ -61,7 +38,7 @@ class HomeViewModel(private val dao: MoviesDao): ViewModel() {
     fun onMovieClick(movie: Movie){
         viewModelScope.launch{
             // copy: has una copia de movie pero cambiale el valor de favorite
-            dao.updateMovie(movie.copy(favorite = !movie.favorite).toLocalMovie())
+            repository.updateMovie(movie.copy(favorite = !movie.favorite))
         }
     }
 
